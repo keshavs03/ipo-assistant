@@ -5,6 +5,7 @@
 // @description  Automates ASBA/IPO steps on mobile and syncs to GitHub
 // @author       You & Gemini
 // @match        *://*.icicibank.com/*
+// @match        *://*.icici.bank.in/*
 // @match        *://*.hdfcbank.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
