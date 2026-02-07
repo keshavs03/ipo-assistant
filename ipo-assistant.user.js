@@ -33,6 +33,7 @@
   let isPlaying = GM_getValue("isPlaying", false);
   let playIndex = GM_getValue("playIndex", 0);
   let cachedFlow = GM_getValue("cachedFlow", []);
+  let stepRetries = 0;
   let selectorsData = {};
   let currentSha = null;
 
@@ -210,6 +211,7 @@
     if (cachedFlow.length > 0 && playIndex < cachedFlow.length) {
       isPlaying = true;
       GM_setValue("isPlaying", true);
+      stepRetries = 0;
       updateUIState();
       executeStep();
       return;
@@ -246,6 +248,7 @@
       playIndex = 0;
       GM_setValue("isPlaying", false);
       GM_setValue("playIndex", 0);
+      stepRetries = 0;
 
       updateUIState();
     } catch (e) {
@@ -264,26 +267,60 @@
     }
 
     const step = cachedFlow[playIndex];
-    const el = document.querySelector(step.selector);
 
-    if (el) {
-      console.log(`Executing Step ${step.step}: Clicking ${step.selector}`);
-      el.style.outline = "3px solid #10b981"; // Green highlight
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    try {
+      const el = document.querySelector(step.selector);
 
-      setTimeout(() => {
-        el.click();
-        playIndex++;
-        GM_setValue("playIndex", playIndex);
-        updateUIState();
+      if (el) {
+        stepRetries = 0;
+        console.log(`Executing Step ${step.step}: Clicking ${step.selector}`);
+        el.style.outline = "3px solid #10b981"; // Green highlight
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
 
-        // Wait for navigation or next step
-        setTimeout(executeStep, 2000);
-      }, 500); // Small delay for visual feedback
-    } else {
-      // Element not found yet (loading?), retry in 1s
-      console.log(`Waiting for element: ${step.selector}`);
-      setTimeout(executeStep, 1000);
+        setTimeout(() => {
+          try {
+            el.click();
+            playIndex++;
+            GM_setValue("playIndex", playIndex);
+            updateUIState();
+
+            // Wait for navigation or next step
+            setTimeout(executeStep, 2000);
+          } catch (innerErr) {
+            handleExecutionError(innerErr, step);
+          }
+        }, 500); // Small delay for visual feedback
+      } else {
+        // Element not found yet (loading?), retry in 1s
+        stepRetries++;
+        if (stepRetries > 10) {
+          throw new Error(`Element not found: ${step.selector}`);
+        }
+        console.log(`Waiting for element: ${step.selector}`);
+        setTimeout(executeStep, 1000);
+      }
+    } catch (err) {
+      handleExecutionError(err, step);
+    }
+  }
+
+  function handleExecutionError(error, step) {
+    isPlaying = false;
+    GM_setValue("isPlaying", false);
+    updateUIState();
+
+    const choice = confirm(
+      `❌ Error at Step ${step.step}: ${error.message}\n\nDo you want to switch to RECORD mode to continue from here?`,
+    );
+
+    if (choice) {
+      isRecording = true;
+      GM_setValue("isRecording", true);
+      // Keep steps that were already successful
+      recordedSteps = cachedFlow.slice(0, playIndex);
+      GM_setValue("recordedSteps", recordedSteps);
+      updateUIState();
+      alert(`Switched to Recording Mode. Resuming from Step ${playIndex + 1}.`);
     }
   }
 
