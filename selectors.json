@@ -10,20 +10,35 @@
     {
       "step": 1,
       "action": "click",
-      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+      "selector": "#login"
     },
     {
       "step": 2,
       "action": "click",
-      "selector": "#user-id"
+      "selector": "#login"
     },
     {
       "step": 3,
       "action": "click",
-      "selector": "body > app-root > div:nth-of-type(1) > div > div > div > div > div > div > app-new-login > div > div:nth-of-type(1) > div > div > app-login-landing > div > div > div:nth-of-type(2) > form > div:nth-of-type(2) > div"
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
     },
     {
       "step": 4,
+      "action": "click",
+      "selector": "body > app-root > div:nth-of-type(1) > div > div > div > div > div > div > app-new-login > div > div:nth-of-type(1) > div > div > app-login-landing > div > div > div:nth-of-type(2) > form > div:nth-of-type(2) > div > label"
+    },
+    {
+      "step": 5,
+      "action": "click",
+      "selector": "#password"
+    },
+    {
+      "step": 6,
+      "action": "click",
+      "selector": "body > app-root > div:nth-of-type(1) > div > div > div > div > div > div > app-new-login > div > div:nth-of-type(1) > div > div > app-login-landing > div > div > div:nth-of-type(2) > form > div:nth-of-type(5) > button"
+    },
+    {
+      "step": 7,
       "action": "click",
       "selector": "body > ngb-modal-window > div > div > app-error-modal > section > div > div:nth-of-type(3) > div:nth-of-type(2) > button"
     }
