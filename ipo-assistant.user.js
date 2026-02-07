@@ -19,7 +19,7 @@
 
   // --- CONFIGURATION ---
   // 1. Fill in your GitHub Username and Repo name
-  const GITHUB_USER_REPO = "YOUR_USERNAME/YOUR_REPO_NAME"; // e.g., "keshavs03/ipo-assistant"
+  const GITHUB_USER_REPO = "keshavs03/ipo-assistant"; // e.g., "keshavs03/ipo-assistant"
 
   // 2. Generate a Fine-Grained Personal Access Token on GitHub
   //    Permissions: Contents -> Read & Write (for your specific repo)
