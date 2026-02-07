@@ -54,7 +54,9 @@
     document.addEventListener(
       "click",
       (e) => {
-        if (!isRecording || e.target.closest("#" + div.id)) return;
+        if (!isRecording || e.target.closest("#" + div.id)) {
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
 
@@ -73,10 +75,15 @@
   }
 
   function getBestSelector(el) {
-    if (el.id) return `#${el.id}`;
-    if (el.name) return `[name='${el.name}']`;
-    if (el.getAttribute("data-testid"))
+    if (el.id) {
+      return `#${el.id}`;
+    }
+    if (el.name) {
+      return `[name='${el.name}']`;
+    }
+    if (el.getAttribute("data-testid")) {
       return `[data-testid='${el.getAttribute("data-testid")}']`;
+    }
 
     // Fallback to a more robust XPath-like selector
     let path = [],
@@ -91,7 +98,9 @@
         tag + (siblings.length > 1 ? `:nth-of-type(${index})` : "");
       path.unshift(selector);
       el = parent;
-      if (tag === "body") break;
+      if (tag === "body") {
+        break;
+      }
     }
     return path.join(" > ");
   }
@@ -178,7 +187,9 @@
         message: `[AUTO-SYNC] Updated IPO flow for ${window.location.hostname}`,
         content: content,
       };
-      if (currentSha) body.sha = currentSha;
+      if (currentSha) {
+        body.sha = currentSha;
+      }
 
       GM_xmlhttpRequest({
         method: "PUT",
