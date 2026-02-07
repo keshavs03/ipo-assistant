@@ -1,13 +1,11 @@
 // ==UserScript==
 // @name         IPO Assistant PRO (Recorder + Sync)
 // @namespace    http://tampermonkey.net/
-// @version      0.2
 // @version      0.3
 // @description  Automates ASBA/IPO steps on mobile and syncs to GitHub
 // @author       You & Gemini
-// @match        *://*.icici.bank.in/*
+// @match        *://*.icicibank.com/*
 // @match        *://*.hdfcbank.com/*
-// @match        *://*.sbi.co.in/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
 // @grant        GM_setValue
