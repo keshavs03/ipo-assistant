@@ -10,17 +10,54 @@
     {
       "step": 1,
       "action": "click",
-      "selector": "body > app-root > div:nth-of-type(1) > div > div > div > div > div > div > app-new-login > div > div:nth-of-type(1) > div"
+      "selector": "button.login.chvron-down"
     },
     {
       "step": 2,
       "action": "click",
-      "selector": "#user-id"
+      "selector": "button.login.chvron-down"
     },
     {
       "step": 3,
       "action": "click",
-      "selector": "#password"
+      "selector": "button.login.chvron-down"
+    },
+    {
+      "step": 4,
+      "action": "click",
+      "selector": "button.login.chvron-down"
+    },
+    {
+      "step": 5,
+      "action": "click",
+      "selector": "#login-btn > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 6,
+      "action": "type",
+      "selector": "[name='username-l']",
+      "value": "KeshavSomani"
+    },
+    {
+      "step": 7,
+      "action": "click",
+      "selector": "body > app-root > div:nth-of-type(1) > div > div > div > div > div > div > app-new-login > div > div:nth-of-type(1) > div > div > app-login-landing > div > div > div:nth-of-type(2) > form > div:nth-of-type(2) > div > label"
+    },
+    {
+      "step": 8,
+      "action": "click",
+      "selector": "[name='password-l']"
+    },
+    {
+      "step": 9,
+      "action": "click",
+      "selector": "[name='password-l']"
+    },
+    {
+      "step": 10,
+      "action": "type",
+      "selector": "[name='password-l']",
+      "value": "what todo"
     }
   ]
 }
