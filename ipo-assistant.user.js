@@ -49,7 +49,7 @@
             <div id="ipo-buttons" style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
                  <button id="rec-btn" style="background:#c83a3a; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">Record Flow</button>
                  <button id="prev-btn" style="background:#555; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">⏮️</button>
-                 <button id="play-btn" style="background:#3b82f6; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">▶️ Auto Apply</button>
+                 <button id="play-btn" style="background:#3b82f6; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">📂 Load Flow</button>
                  <button id="next-btn" style="background:#555; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">⏭️</button>
                  <button id="sync-btn" style="background:#0f9d58; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">Sync to GitHub</button>
             </div>
@@ -118,7 +118,7 @@
 
     recBtn.innerText = "Record Flow";
     recBtn.style.background = "#c83a3a";
-    playBtn.innerText = "▶️ Auto Apply";
+    playBtn.innerText = "📂 Load Flow";
     playBtn.style.background = "#3b82f6";
 
     if (isRecording) {
@@ -137,7 +137,7 @@
       recBtn.style.display = "none";
       prevBtn.style.display = "inline-block";
       nextBtn.style.display = "inline-block";
-      playBtn.innerText = "▶️ Resume";
+      playBtn.innerText = "▶️ Start Auto";
       statusDiv.style.display = "block";
       statusDiv.innerText = `Paused: Step ${playIndex + 1}/${cachedFlow.length}`;
     } else if (recordedSteps.length > 0) {
@@ -234,7 +234,7 @@
 
       if (!allSelectors[host]) {
         alert(`No recorded flow found for ${host}`);
-        playBtn.innerText = "▶️ Auto Apply";
+        playBtn.innerText = "📂 Load Flow";
         return;
       }
 
@@ -242,13 +242,12 @@
       cachedFlow = allSelectors[host];
       GM_setValue("cachedFlow", cachedFlow);
 
-      isPlaying = true;
+      isPlaying = false; // Start in Paused/Manual mode
       playIndex = 0;
-      GM_setValue("isPlaying", true);
+      GM_setValue("isPlaying", false);
       GM_setValue("playIndex", 0);
 
       updateUIState();
-      executeStep();
     } catch (e) {
       alert("Error fetching flow: " + e.message);
       document.getElementById("play-btn").innerText = "▶️ Auto Apply";
