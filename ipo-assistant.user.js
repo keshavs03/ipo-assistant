@@ -57,9 +57,11 @@
                  <button id="play-btn" style="background:#3b82f6; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">📂 Load Flow</button>
                  <button id="next-btn" style="background:#555; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">⏭️</button>
                  <button id="reset-btn" style="background:#777; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">🗑️ Reset</button>
+                 <button id="details-btn" style="background:#8b5cf6; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">📜 Logs</button>
                  <button id="sync-btn" style="background:#0f9d58; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">Sync to GitHub</button>
             </div>
             <div id="step-status" style="margin-top:10px; font-size:12px; color:#aaa; display:none; background:#222; padding:5px; border-radius:4px; border:1px solid #444; word-break:break-all;"></div>
+            <div id="details-panel" style="display:none; margin-top:10px; max-height:250px; overflow-y:auto; background:#1a1a1a; padding:8px; border-radius:8px; border:1px solid #333; font-family:monospace; font-size:11px; color:#ddd;"></div>
         `;
     document.body.appendChild(div);
 
@@ -68,6 +70,7 @@
     document.getElementById("prev-btn").onclick = stepPrev;
     document.getElementById("next-btn").onclick = stepNext;
     document.getElementById("reset-btn").onclick = () => resetFlow(false);
+    document.getElementById("details-btn").onclick = toggleDetails;
     document.getElementById("sync-btn").onclick = syncToGitHub;
 
     updateUIState();
@@ -92,6 +95,8 @@
           step: recordedSteps.length + 1,
           action: "click",
           selector: selector,
+          hostname: window.location.hostname,
+          pathname: window.location.pathname,
         });
 
         // Persist steps immediately so they survive redirects/new tabs
@@ -123,6 +128,8 @@
           action: "type",
           selector: selector,
           value: e.target.value,
+          hostname: window.location.hostname,
+          pathname: window.location.pathname,
         });
 
         GM_setValue("recordedSteps", recordedSteps);
@@ -139,6 +146,7 @@
     const nextBtn = document.getElementById("next-btn");
     const resetBtn = document.getElementById("reset-btn");
     const syncBtn = document.getElementById("sync-btn");
+    const detailsBtn = document.getElementById("details-btn");
     const recIndicator = document.getElementById("rec-indicator");
     const statusDiv = document.getElementById("step-status");
     const lastError = GM_getValue("lastError", null);
@@ -149,6 +157,7 @@
     prevBtn.style.display = "none";
     nextBtn.style.display = "none";
     resetBtn.style.display = "none";
+    detailsBtn.style.display = "inline-block";
     syncBtn.style.display = "none";
     recIndicator.style.display = "none";
     statusDiv.style.display = "none";
@@ -374,6 +383,33 @@
     updateUIState();
   }
 
+  async function toggleDetails() {
+    const panel = document.getElementById("details-panel");
+    if (panel.style.display === "block") {
+      panel.style.display = "none";
+      return;
+    }
+
+    panel.style.display = "block";
+    panel.innerHTML = "Loading...";
+
+    let html = `<strong>Current Flow Steps:</strong><br>`;
+    if (cachedFlow.length === 0 && recordedSteps.length === 0) {
+      html += `<span style="color:#777">No steps loaded.</span><br>`;
+    } else {
+      const steps = cachedFlow.length > 0 ? cachedFlow : recordedSteps;
+      steps.forEach((s) => {
+        html += `<div style="margin-bottom:4px; border-bottom:1px solid #333; padding-bottom:2px;">
+          <span style="color:#3b82f6">#${s.step}</span> ${s.action.toUpperCase()} <br>
+          <span style="color:#aaa">${s.selector}</span><br>
+          <span style="color:#555; font-size:9px;">${s.hostname}</span>
+        </div>`;
+      });
+    }
+
+    panel.innerHTML = html;
+  }
+
   async function togglePlayback() {
     if (isPlaying) {
       // Stop Playback
@@ -409,16 +445,34 @@
       // 1. Fetch latest flow
       const fileData = await fetchFromGitHub();
       const allSelectors = JSON.parse(atob(fileData.content));
-      const host = window.location.hostname.replace("www.", "");
+      const baseHost = window.location.hostname.replace("www.", "");
 
-      if (!allSelectors[host]) {
-        alert(`No recorded flow found for ${host}`);
+      // Find matching flows (exact or variants)
+      const matches = Object.keys(allSelectors).filter((k) =>
+        k.startsWith(baseHost),
+      );
+
+      let selectedKey = null;
+      if (matches.length === 0) {
+        alert(`No recorded flow found for ${baseHost}`);
         playBtn.innerText = "📂 Load Flow";
         return;
+      } else if (matches.length === 1) {
+        selectedKey = matches[0];
+      } else {
+        const choice = prompt(
+          `Multiple flows found:\n${matches.join("\n")}\n\nEnter the exact name of the flow to load:`,
+          matches[0],
+        );
+        if (!choice || !allSelectors[choice]) {
+          playBtn.innerText = "📂 Load Flow";
+          return;
+        }
+        selectedKey = choice;
       }
 
       // 2. Initialize State
-      cachedFlow = allSelectors[host];
+      cachedFlow = allSelectors[selectedKey];
       GM_setValue("cachedFlow", cachedFlow);
       GM_setValue("flowOrigin", window.location.hostname); // Set origin
 
@@ -446,6 +500,17 @@
     }
 
     const step = cachedFlow[playIndex];
+
+    // Validate Step Context
+    if (step.hostname && !isRelated(step.hostname, window.location.hostname)) {
+      handleExecutionError(
+        new Error(
+          `Step recorded on ${step.hostname}, but you are on ${window.location.hostname}`,
+        ),
+        step,
+      );
+      return;
+    }
 
     try {
       const el = document.querySelector(step.selector);
@@ -662,8 +727,23 @@
     }
 
     // 2. Add or update the flow for the current bank
-    const host = window.location.hostname.replace("www.", "");
-    selectorsData[host] = recordedSteps;
+    const baseHost = window.location.hostname.replace("www.", "");
+    let targetKey = baseHost;
+
+    if (selectorsData[targetKey]) {
+      const userChoice = prompt(
+        `Flow for '${targetKey}' already exists.\n\n` +
+          `- Click OK to OVERWRITE.\n` +
+          `- Enter a suffix (e.g. 'login') to save as '${targetKey}-login'.\n` +
+          `- Click Cancel to abort.`,
+        "",
+      );
+      if (userChoice === null) return; // Cancelled
+      if (userChoice.trim() !== "") {
+        targetKey = `${baseHost}-${userChoice.trim()}`;
+      }
+    }
+    selectorsData[targetKey] = recordedSteps;
 
     // 3. Push the updated file back to GitHub
     const newContent = btoa(JSON.stringify(selectorsData, null, 2)); // Base64 encode
