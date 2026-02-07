@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IPO Assistant PRO (Recorder + Sync)
 // @namespace    http://tampermonkey.net/
-// @version      0.6
+// @version      0.7
 // @description  Automates ASBA/IPO steps on mobile and syncs to GitHub
 // @author       You & Gemini
 // @match        *://*.icicibank.com/*
@@ -107,6 +107,7 @@
     const syncBtn = document.getElementById("sync-btn");
     const recIndicator = document.getElementById("rec-indicator");
     const statusDiv = document.getElementById("step-status");
+    const lastError = GM_getValue("lastError", null);
 
     // Default Reset
     recBtn.style.display = "inline-block";
@@ -121,6 +122,7 @@
     recBtn.style.background = "#c83a3a";
     playBtn.innerText = "📂 Load Flow";
     playBtn.style.background = "#3b82f6";
+    statusDiv.style.color = "#aaa"; // Default gray
 
     if (isRecording) {
       recBtn.innerText = "Stop Recording";
@@ -133,6 +135,18 @@
       playBtn.style.background = "#ef4444";
       statusDiv.style.display = "block";
       statusDiv.innerText = `Running Step ${playIndex + 1}/${cachedFlow.length}`;
+    } else if (lastError) {
+      // ERROR STATE
+      recBtn.style.display = "inline-block";
+      recBtn.innerText = "🔴 Fix from here"; // Smart Context
+
+      playBtn.innerText = "🔄 Retry";
+
+      prevBtn.style.display = "inline-block";
+      nextBtn.style.display = "inline-block";
+      statusDiv.style.display = "block";
+      statusDiv.style.color = "#ef4444"; // Red for error
+      statusDiv.innerText = lastError;
     } else if (cachedFlow.length > 0) {
       // Manual / Paused Mode
       recBtn.style.display = "none";
@@ -179,6 +193,21 @@
   }
 
   function toggleRecord() {
+    // Smart "Fix from here" logic
+    const lastError = GM_getValue("lastError", null);
+    if (!isRecording && lastError && cachedFlow.length > 0) {
+      // Inherit successful steps
+      recordedSteps = cachedFlow.slice(0, playIndex);
+      GM_setValue("recordedSteps", recordedSteps);
+
+      // Clear error and start recording
+      GM_setValue("lastError", null);
+      isRecording = true;
+      GM_setValue("isRecording", true);
+      updateUIState();
+      return;
+    }
+
     isRecording = !isRecording;
     GM_setValue("isRecording", isRecording);
 
@@ -212,6 +241,7 @@
       isPlaying = true;
       GM_setValue("isPlaying", true);
       stepRetries = 0;
+      GM_setValue("lastError", null); // Clear error on resume
       updateUIState();
       executeStep();
       return;
@@ -249,6 +279,7 @@
       GM_setValue("isPlaying", false);
       GM_setValue("playIndex", 0);
       stepRetries = 0;
+      GM_setValue("lastError", null);
 
       updateUIState();
     } catch (e) {
@@ -307,27 +338,17 @@
   function handleExecutionError(error, step) {
     isPlaying = false;
     GM_setValue("isPlaying", false);
+
+    // Set persistent error state (no popup)
+    GM_setValue("lastError", `⚠️ Error at Step ${step.step}: ${error.message}`);
     updateUIState();
-
-    const choice = confirm(
-      `❌ Error at Step ${step.step}: ${error.message}\n\nDo you want to switch to RECORD mode to continue from here?`,
-    );
-
-    if (choice) {
-      isRecording = true;
-      GM_setValue("isRecording", true);
-      // Keep steps that were already successful
-      recordedSteps = cachedFlow.slice(0, playIndex);
-      GM_setValue("recordedSteps", recordedSteps);
-      updateUIState();
-      alert(`Switched to Recording Mode. Resuming from Step ${playIndex + 1}.`);
-    }
   }
 
   function stepPrev() {
     if (playIndex > 0) {
       playIndex--;
       GM_setValue("playIndex", playIndex);
+      GM_setValue("lastError", null); // Clear error on manual nav
       updateUIState();
       // Highlight previous element for visual confirmation
       const step = cachedFlow[playIndex];
@@ -346,6 +367,7 @@
         setTimeout(() => el.click(), 200);
         playIndex++;
         GM_setValue("playIndex", playIndex);
+        GM_setValue("lastError", null); // Clear error on manual nav
         updateUIState();
       } else {
         alert("Element not found. Try scrolling or waiting.");
@@ -469,7 +491,8 @@
     isRecording ||
     recordedSteps.length > 0 ||
     isPlaying ||
-    cachedFlow.length > 0
+    cachedFlow.length > 0 ||
+    GM_getValue("lastError", null)
   ) {
     // Wait for the page to be somewhat loaded
     setTimeout(createUI, 2000);
