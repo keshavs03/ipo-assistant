@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IPO Assistant</title>
-    <!-- We use Tailwind CSS for styling from a CDN, so no install is needed. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* A little extra style for a premium feel on touch */
         .bank-card:active { transform: scale(0.98); }
     </style>
 </head>
@@ -15,51 +13,45 @@
 
     <header class="mb-8">
         <h1 class="text-2xl font-bold text-blue-400">IPO Quick-Apply</h1>
-        <p class="text-gray-400 text-sm">Your data is stored locally on this device only.</p>
+        <p class="text-gray-400 text-sm">Stored locally on your device</p>
     </header>
 
-    <!-- Section for saving user details locally -->
     <section class="bg-gray-800 p-4 rounded-xl mb-8 border border-gray-700">
         <h2 class="text-sm font-semibold uppercase text-gray-500 mb-4">Your Details</h2>
         <div class="space-y-3">
             <input id="pan" type="text" placeholder="Enter PAN Number" class="w-full bg-gray-700 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500">
+            <input id="account" type="text" placeholder="Enter Account Number" class="w-full bg-gray-700 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500">
             <button onclick="saveDetails()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg font-bold transition">Save Locally</button>
         </div>
     </section>
 
-    <!-- Section for launching bank websites -->
     <section class="grid grid-cols-1 gap-4">
         <h2 class="text-sm font-semibold uppercase text-gray-500 mb-2">Select Bank</h2>
         
-        <button onclick="launchBank('https://www.icicibank.com/')" 
+        <button onclick="launchBank('https://www.icicibank.com/personal-banking/investments/ipo')" 
                 class="bank-card bg-orange-600 p-4 rounded-xl flex justify-between items-center font-bold">
             ICICI Bank <span>→</span>
         </button>
 
-        <button onclick="launchBank('https://www.hdfcbank.com/')" 
+        <button onclick="launchBank('https://www.hdfcbank.com/personal/invest/ipo-asba')" 
                 class="bank-card bg-blue-700 p-4 rounded-xl flex justify-between items-center font-bold">
             HDFC Bank <span>→</span>
         </button>
-        
-        <!-- You can add more banks here by copying the button structure -->
-
     </section>
 
     <script>
-        // On page load, try to find any previously saved data.
+        // Load data on start
         document.getElementById('pan').value = localStorage.getItem('user_pan') || '';
+        document.getElementById('account').value = localStorage.getItem('user_account') || '';
 
-        // Function to save the PAN number to the browser's local storage.
         function saveDetails() {
-            const panInput = document.getElementById('pan').value;
-            localStorage.setItem('user_pan', panInput);
-            alert("Details saved securely to this browser's local storage.");
+            localStorage.setItem('user_pan', document.getElementById('pan').value);
+            localStorage.setItem('user_account', document.getElementById('account').value);
+            alert("Saved securely to this browser.");
         }
 
-        // Function to open the bank's website in a new tab.
         function launchBank(url) {
-            // We add "#apply-ipo" to the URL. This is a "secret message" 
-            // that our future script will look for.
+            // We append a hash so the Tampermonkey script knows to wake up
             window.open(url + "#apply-ipo", "_blank");
         }
     </script>
