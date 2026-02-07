@@ -99,6 +99,33 @@
       },
       true,
     );
+
+    // Listen for typing (Change events)
+    document.addEventListener(
+      "change",
+      (e) => {
+        if (
+          !GM_getValue("isRecording", false) ||
+          e.target.closest("#" + div.id)
+        ) {
+          return;
+        }
+
+        recordedSteps = GM_getValue("recordedSteps", []);
+        const selector = getBestSelector(e.target);
+
+        recordedSteps.push({
+          step: recordedSteps.length + 1,
+          action: "type",
+          selector: selector,
+          value: e.target.value,
+        });
+
+        GM_setValue("recordedSteps", recordedSteps);
+        console.log(`Step ${recordedSteps.length}: Typed -> ${selector}`);
+      },
+      true,
+    );
   }
 
   function updateUIState() {
@@ -175,14 +202,28 @@
   }
 
   function getBestSelector(el) {
-    if (el.id) {
-      return `#${el.id}`;
-    }
-    if (el.name) {
-      return `[name='${el.name}']`;
-    }
+    // 1. Data attributes (Test IDs) - Highest priority
     if (el.getAttribute("data-testid")) {
       return `[data-testid='${el.getAttribute("data-testid")}']`;
+    }
+
+    // 2. Name attribute (Common for inputs)
+    if (el.name) {
+      const selector = `[name='${el.name}']`;
+      // Simple check if unique in document
+      if (document.querySelectorAll(selector).length === 1) return selector;
+    }
+
+    // 3. ID - Only if it looks stable (no long sequences of numbers)
+    if (el.id && !/\d{3,}/.test(el.id)) {
+      return `#${el.id}`;
+    }
+
+    // 4. Input specific attributes (Placeholder is very stable for login forms)
+    if (el.tagName.toLowerCase() === "input") {
+      if (el.placeholder) {
+        return `input[placeholder='${el.placeholder}']`;
+      }
     }
 
     // Fallback to a more robust XPath-like selector
@@ -333,7 +374,9 @@
         // Visual Feedback
         const statusDiv = document.getElementById("step-status");
         if (statusDiv) {
-          statusDiv.innerText = `Step ${step.step}: Clicking ${step.selector}`;
+          const actionText =
+            step.action === "type" ? `Typing "${step.value}"` : "Clicking";
+          statusDiv.innerText = `Step ${step.step}: ${actionText} ${step.selector}`;
         }
 
         el.style.outline = "3px solid #10b981"; // Green highlight
@@ -341,7 +384,14 @@
 
         setTimeout(() => {
           try {
-            el.click();
+            if (step.action === "type") {
+              el.value = step.value;
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+            } else {
+              el.click();
+            }
+
             playIndex++;
             GM_setValue("playIndex", playIndex);
             updateUIState();
