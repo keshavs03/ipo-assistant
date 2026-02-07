@@ -7,6 +7,7 @@
 // @match        *://*.icicibank.com/*
 // @match        *://*.icici.bank.in/*
 // @match        *://*.hdfcbank.com/*
+// @match        *://*.retailnetbanking.icici.bank.in/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
 // @grant        GM_setValue
