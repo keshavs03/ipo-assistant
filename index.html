@@ -1,59 +1,98 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IPO Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .bank-card:active { transform: scale(0.98); }
+      .bank-card:active {
+        transform: scale(0.98);
+      }
     </style>
-</head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-6 font-sans">
-
-    <header class="mb-8">
+  </head>
+  <body
+    class="bg-gray-900 text-gray-100 min-h-screen p-6 font-sans flex justify-center items-start pt-10"
+  >
+    <div class="w-full max-w-md">
+      <header class="mb-8">
         <h1 class="text-2xl font-bold text-blue-400">IPO Quick-Apply</h1>
         <p class="text-gray-400 text-sm">Stored locally on your device</p>
-    </header>
+      </header>
 
-    <section class="bg-gray-800 p-4 rounded-xl mb-8 border border-gray-700">
-        <h2 class="text-sm font-semibold uppercase text-gray-500 mb-4">Your Details</h2>
+      <section class="bg-gray-800 p-4 rounded-xl mb-8 border border-gray-700">
+        <h2 class="text-sm font-semibold uppercase text-gray-500 mb-4">
+          Your Details
+        </h2>
         <div class="space-y-3">
-            <input id="pan" type="text" placeholder="Enter PAN Number" class="w-full bg-gray-700 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500">
-            <input id="account" type="text" placeholder="Enter Account Number" class="w-full bg-gray-700 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500">
-            <button onclick="saveDetails()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg font-bold transition">Save Locally</button>
+          <input
+            id="pan"
+            type="text"
+            placeholder="Enter PAN Number"
+            class="w-full bg-gray-700 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            id="account"
+            type="text"
+            placeholder="Enter Account Number"
+            class="w-full bg-gray-700 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onclick="saveDetails()"
+            class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg font-bold transition"
+          >
+            Save Locally
+          </button>
         </div>
-    </section>
+      </section>
 
-    <section class="grid grid-cols-1 gap-4">
-        <h2 class="text-sm font-semibold uppercase text-gray-500 mb-2">Select Bank</h2>
-        
-        <button onclick="launchBank('https://www.icicibank.com/personal-banking/investments/ipo')" 
-                class="bank-card bg-orange-600 p-4 rounded-xl flex justify-between items-center font-bold">
-            ICICI Bank <span>→</span>
+      <section class="grid grid-cols-1 gap-4">
+        <h2 class="text-sm font-semibold uppercase text-gray-500 mb-2">
+          Select Bank
+        </h2>
+
+        <button
+          onclick="
+            launchBank(
+              'https://www.icicibank.com/personal-banking/investments/ipo',
+            )
+          "
+          class="bank-card bg-orange-600 p-4 rounded-xl flex justify-between items-center font-bold"
+        >
+          ICICI Bank <span>→</span>
         </button>
 
-        <button onclick="launchBank('https://www.hdfcbank.com/personal/invest/ipo-asba')" 
-                class="bank-card bg-blue-700 p-4 rounded-xl flex justify-between items-center font-bold">
-            HDFC Bank <span>→</span>
+        <button
+          onclick="
+            launchBank('https://www.hdfcbank.com/personal/invest/ipo-asba')
+          "
+          class="bank-card bg-blue-700 p-4 rounded-xl flex justify-between items-center font-bold"
+        >
+          HDFC Bank <span>→</span>
         </button>
-    </section>
+      </section>
+    </div>
 
     <script>
-        // Load data on start
-        document.getElementById('pan').value = localStorage.getItem('user_pan') || '';
-        document.getElementById('account').value = localStorage.getItem('user_account') || '';
+      // Load data on start
+      document.getElementById("pan").value =
+        localStorage.getItem("user_pan") || "";
+      document.getElementById("account").value =
+        localStorage.getItem("user_account") || "";
 
-        function saveDetails() {
-            localStorage.setItem('user_pan', document.getElementById('pan').value);
-            localStorage.setItem('user_account', document.getElementById('account').value);
-            alert("Saved securely to this browser.");
-        }
+      function saveDetails() {
+        localStorage.setItem("user_pan", document.getElementById("pan").value);
+        localStorage.setItem(
+          "user_account",
+          document.getElementById("account").value,
+        );
+        alert("Saved securely to this browser.");
+      }
 
-        function launchBank(url) {
-            // We append a hash so the Tampermonkey script knows to wake up
-            window.open(url + "#apply-ipo", "_blank");
-        }
+      function launchBank(url) {
+        // We append a hash so the Tampermonkey script knows to wake up
+        window.open(url + "#apply-ipo", "_blank");
+      }
     </script>
-</body>
+  </body>
 </html>
