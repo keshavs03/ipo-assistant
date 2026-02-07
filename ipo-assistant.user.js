@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IPO Assistant PRO (Recorder + Sync)
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  Automates ASBA/IPO steps on mobile and syncs to GitHub
 // @author       You & Gemini
 // @match        *://*.icicibank.com/*
@@ -11,8 +11,8 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @connect      api.github.com
-// @updateURL    https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/ipo-assistant.user.js
-// @downloadURL  https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/ipo-assistant.user.js
+// @updateURL    https://keshavs03.github.io/ipo-assistant/ipo-assistant.user.js
+// @downloadURL  https://keshavs03.github.io/ipo-assistant/ipo-assistant.user.js
 // ==/UserScript==
 
 (function () {
@@ -22,9 +22,8 @@
   // 1. Fill in your GitHub Username and Repo name
   const GITHUB_USER_REPO = "keshavs03/ipo-assistant"; // e.g., "keshavs03/ipo-assistant"
 
-  // 2. Generate a Fine-Grained Personal Access Token on GitHub
-  //    Permissions: Contents -> Read & Write (for your specific repo)
-  const GITHUB_TOKEN = "YOUR_GITHUB_TOKEN_HERE"; // PASTE YOUR TOKEN
+  // 2. Token is stored securely in Tampermonkey's local storage
+  let GITHUB_TOKEN = GM_getValue("GITHUB_TOKEN", "");
 
   const SELECTORS_FILE_PATH = "selectors.json";
   // --- END CONFIGURATION ---
@@ -167,6 +166,15 @@
       return;
     }
 
+    if (!GITHUB_TOKEN) {
+      const input = prompt(
+        "Please enter your GitHub Personal Access Token:\n(This will be saved securely in Tampermonkey)",
+      );
+      if (!input) return;
+      GITHUB_TOKEN = input.trim();
+      GM_setValue("GITHUB_TOKEN", GITHUB_TOKEN);
+    }
+
     alert("Preparing to sync with GitHub...");
 
     // 1. Fetch the latest version of selectors.json
@@ -200,6 +208,13 @@
         onload: function (response) {
           if (response.status === 200) {
             resolve(JSON.parse(response.responseText));
+          } else if (response.status === 401) {
+            GM_setValue("GITHUB_TOKEN", "");
+            GITHUB_TOKEN = "";
+            alert(
+              "❌ Error: Invalid GitHub Token. It has been cleared. Please click Sync again to enter a new one.",
+            );
+            reject(new Error("Unauthorized"));
           } else {
             reject(new Error(response.statusText));
           }
@@ -234,6 +249,13 @@
             recordedSteps = [];
             GM_setValue("recordedSteps", []);
             resolve(JSON.parse(response.responseText));
+          } else if (response.status === 401) {
+            GM_setValue("GITHUB_TOKEN", "");
+            GITHUB_TOKEN = "";
+            alert(
+              "❌ Error: Invalid GitHub Token. It has been cleared. Please click Sync again to enter a new one.",
+            );
+            reject(new Error("Unauthorized"));
           } else {
             alert(
               `❌ ERROR: Failed to sync.\nStatus: ${response.status}\nResponse: ${response.responseText}`,
