@@ -89,11 +89,12 @@
     let path = [],
       parent;
     while ((parent = el.parentNode)) {
-      let tag = el.tagName.toLowerCase();
+      const currentEl = el;
+      let tag = currentEl.tagName.toLowerCase();
       let siblings = Array.from(parent.children).filter(
-        (e) => e.tagName === el.tagName,
+        (e) => e.tagName === currentEl.tagName,
       );
-      let index = siblings.indexOf(el) + 1;
+      let index = siblings.indexOf(currentEl) + 1;
       let selector =
         tag + (siblings.length > 1 ? `:nth-of-type(${index})` : "");
       path.unshift(selector);
