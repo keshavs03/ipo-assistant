@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IPO Assistant PRO (Recorder + Sync)
 // @namespace    http://tampermonkey.net/
-// @version      0.8
+// @version      0.9
 // @description  Automates ASBA/IPO steps on mobile and syncs to GitHub
 // @author       You & Gemini
 // @match        *://*.icicibank.com/*
@@ -138,7 +138,8 @@
       playBtn.innerText = "⏹️ Stop";
       playBtn.style.background = "#ef4444";
       statusDiv.style.display = "block";
-      statusDiv.innerText = `Running Step ${playIndex + 1}/${cachedFlow.length}`;
+      const step = cachedFlow[playIndex];
+      statusDiv.innerText = `Running Step ${playIndex + 1}/${cachedFlow.length}\nTarget: ${step ? step.selector : "..."}`;
     } else if (lastError) {
       // ERROR STATE
       recBtn.style.display = "inline-block";
@@ -153,12 +154,17 @@
       statusDiv.innerText = lastError;
     } else if (cachedFlow.length > 0) {
       // Manual / Paused Mode
-      recBtn.style.display = "none";
+      recBtn.style.display = "inline-block";
+      recBtn.innerText = "🔴 Rec from here";
+
       prevBtn.style.display = "inline-block";
       nextBtn.style.display = "inline-block";
       playBtn.innerText = "▶️ Start Auto";
       statusDiv.style.display = "block";
-      statusDiv.innerText = `Paused: Step ${playIndex + 1}/${cachedFlow.length}`;
+
+      const step = cachedFlow[playIndex];
+      const selectorInfo = step ? step.selector : "End";
+      statusDiv.innerText = `Paused: Step ${playIndex + 1}/${cachedFlow.length}\nNext: ${selectorInfo}`;
     } else if (recordedSteps.length > 0) {
       syncBtn.style.display = "inline-block";
     }
@@ -201,19 +207,29 @@
   }
 
   function toggleRecord() {
-    // Smart "Fix from here" logic
-    const lastError = GM_getValue("lastError", null);
-    if (!isRecording && lastError && cachedFlow.length > 0) {
-      // Inherit successful steps
-      recordedSteps = cachedFlow.slice(0, playIndex);
-      GM_setValue("recordedSteps", recordedSteps);
+    // Smart "Record from here" logic (Fix or Branch off)
+    if (!isRecording && cachedFlow.length > 0) {
+      if (
+        confirm(
+          "Start recording from this step? This will discard the rest of the loaded flow.",
+        )
+      ) {
+        // Inherit successful steps up to current point
+        recordedSteps = cachedFlow.slice(0, playIndex);
+        GM_setValue("recordedSteps", recordedSteps);
 
-      // Clear error and start recording
-      GM_setValue("lastError", null);
-      isRecording = true;
-      GM_setValue("isRecording", true);
-      updateUIState();
-      return;
+        // Clear error/cache and start recording
+        GM_setValue("lastError", null);
+        GM_setValue("cachedFlow", []); // Clear cache to avoid state confusion
+        cachedFlow = [];
+
+        isRecording = true;
+        GM_setValue("isRecording", true);
+        updateUIState();
+        return;
+      } else {
+        return; // Cancelled
+      }
     }
 
     isRecording = !isRecording;
@@ -313,6 +329,13 @@
       if (el) {
         stepRetries = 0;
         console.log(`Executing Step ${step.step}: Clicking ${step.selector}`);
+
+        // Visual Feedback
+        const statusDiv = document.getElementById("step-status");
+        if (statusDiv) {
+          statusDiv.innerText = `Step ${step.step}: Clicking ${step.selector}`;
+        }
+
         el.style.outline = "3px solid #10b981"; // Green highlight
         el.scrollIntoView({ behavior: "smooth", block: "center" });
 
