@@ -46,33 +46,24 @@
                 <b style="color:#3b82f6; font-size:14px;">IPO Assistant</b>
                 <span id="rec-indicator" style="font-size:18px; display:none;">🔴</span>
             </div>
-            <div id="ipo-buttons" style="margin-top:15px; display:flex; gap:10px;">
+            <div id="ipo-buttons" style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
                  <button id="rec-btn" style="background:#c83a3a; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">Record Flow</button>
+                 <button id="prev-btn" style="background:#555; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">⏮️</button>
                  <button id="play-btn" style="background:#3b82f6; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">▶️ Auto Apply</button>
+                 <button id="next-btn" style="background:#555; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">⏭️</button>
                  <button id="sync-btn" style="background:#0f9d58; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">Sync to GitHub</button>
             </div>
+            <div id="step-status" style="margin-top:10px; font-size:12px; color:#aaa; display:none;"></div>
         `;
     document.body.appendChild(div);
 
     document.getElementById("rec-btn").onclick = toggleRecord;
     document.getElementById("play-btn").onclick = togglePlayback;
+    document.getElementById("prev-btn").onclick = stepPrev;
+    document.getElementById("next-btn").onclick = stepNext;
     document.getElementById("sync-btn").onclick = syncToGitHub;
 
-    // Restore UI state if page reloaded/redirected
-    if (isRecording) {
-      const recBtn = document.getElementById("rec-btn");
-      const recIndicator = document.getElementById("rec-indicator");
-      recBtn.innerText = "Stop Recording";
-      recBtn.style.background = "#555";
-      recIndicator.style.display = "inline";
-    } else if (isPlaying) {
-      const playBtn = document.getElementById("play-btn");
-      playBtn.innerText = "⏹️ Stop";
-      playBtn.style.background = "#555";
-      document.getElementById("rec-btn").style.display = "none";
-    } else if (recordedSteps.length > 0) {
-      document.getElementById("sync-btn").style.display = "inline-block";
-    }
+    updateUIState();
 
     document.addEventListener(
       "click",
@@ -105,6 +96,53 @@
       },
       true,
     );
+  }
+
+  function updateUIState() {
+    const recBtn = document.getElementById("rec-btn");
+    const playBtn = document.getElementById("play-btn");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    const syncBtn = document.getElementById("sync-btn");
+    const recIndicator = document.getElementById("rec-indicator");
+    const statusDiv = document.getElementById("step-status");
+
+    // Default Reset
+    recBtn.style.display = "inline-block";
+    playBtn.style.display = "inline-block";
+    prevBtn.style.display = "none";
+    nextBtn.style.display = "none";
+    syncBtn.style.display = "none";
+    recIndicator.style.display = "none";
+    statusDiv.style.display = "none";
+
+    recBtn.innerText = "Record Flow";
+    recBtn.style.background = "#c83a3a";
+    playBtn.innerText = "▶️ Auto Apply";
+    playBtn.style.background = "#3b82f6";
+
+    if (isRecording) {
+      recBtn.innerText = "Stop Recording";
+      recBtn.style.background = "#555";
+      playBtn.style.display = "none";
+      recIndicator.style.display = "inline";
+    } else if (isPlaying) {
+      recBtn.style.display = "none";
+      playBtn.innerText = "⏹️ Stop";
+      playBtn.style.background = "#ef4444";
+      statusDiv.style.display = "block";
+      statusDiv.innerText = `Running Step ${playIndex + 1}/${cachedFlow.length}`;
+    } else if (cachedFlow.length > 0) {
+      // Manual / Paused Mode
+      recBtn.style.display = "none";
+      prevBtn.style.display = "inline-block";
+      nextBtn.style.display = "inline-block";
+      playBtn.innerText = "▶️ Resume";
+      statusDiv.style.display = "block";
+      statusDiv.innerText = `Paused: Step ${playIndex + 1}/${cachedFlow.length}`;
+    } else if (recordedSteps.length > 0) {
+      syncBtn.style.display = "inline-block";
+    }
   }
 
   function getBestSelector(el) {
@@ -143,31 +181,20 @@
     isRecording = !isRecording;
     GM_setValue("isRecording", isRecording);
 
-    const recBtn = document.getElementById("rec-btn");
-    const syncBtn = document.getElementById("sync-btn");
-    const recIndicator = document.getElementById("rec-indicator");
-
     if (isRecording) {
       recordedSteps = [];
       GM_setValue("recordedSteps", recordedSteps);
-      recBtn.innerText = "Stop Recording";
-      recBtn.style.background = "#555";
-      syncBtn.style.display = "none";
-      recIndicator.style.display = "inline";
       alert(
         "RECORDING STARTED\nClick the elements on the page in the correct order.",
       );
     } else {
-      recBtn.innerText = "Record Flow";
-      recBtn.style.background = "#c83a3a";
-      syncBtn.style.display = "inline-block";
-      recIndicator.style.display = "none";
       if (recordedSteps.length > 0) {
         alert(
           `RECORDING STOPPED\n${recordedSteps.length} steps captured. Click "Sync to GitHub" to save.`,
         );
       }
     }
+    updateUIState();
   }
 
   async function togglePlayback() {
@@ -175,7 +202,16 @@
       // Stop Playback
       isPlaying = false;
       GM_setValue("isPlaying", false);
-      window.location.reload(); // Reload to reset UI
+      updateUIState();
+      return;
+    }
+
+    // Resume if paused
+    if (cachedFlow.length > 0 && playIndex < cachedFlow.length) {
+      isPlaying = true;
+      GM_setValue("isPlaying", true);
+      updateUIState();
+      executeStep();
       return;
     }
 
@@ -211,9 +247,7 @@
       GM_setValue("isPlaying", true);
       GM_setValue("playIndex", 0);
 
-      playBtn.innerText = "⏹️ Stop";
-      document.getElementById("rec-btn").style.display = "none";
-
+      updateUIState();
       executeStep();
     } catch (e) {
       alert("Error fetching flow: " + e.message);
@@ -242,6 +276,7 @@
         el.click();
         playIndex++;
         GM_setValue("playIndex", playIndex);
+        updateUIState();
 
         // Wait for navigation or next step
         setTimeout(executeStep, 2000);
@@ -250,6 +285,37 @@
       // Element not found yet (loading?), retry in 1s
       console.log(`Waiting for element: ${step.selector}`);
       setTimeout(executeStep, 1000);
+    }
+  }
+
+  function stepPrev() {
+    if (playIndex > 0) {
+      playIndex--;
+      GM_setValue("playIndex", playIndex);
+      updateUIState();
+      // Highlight previous element for visual confirmation
+      const step = cachedFlow[playIndex];
+      const el = document.querySelector(step.selector);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
+  function stepNext() {
+    if (playIndex < cachedFlow.length) {
+      const step = cachedFlow[playIndex];
+      const el = document.querySelector(step.selector);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.style.outline = "3px solid #eab308"; // Yellow for manual
+        setTimeout(() => el.click(), 200);
+        playIndex++;
+        GM_setValue("playIndex", playIndex);
+        updateUIState();
+      } else {
+        alert("Element not found. Try scrolling or waiting.");
+      }
+    } else {
+      alert("End of flow.");
     }
   }
 
@@ -365,7 +431,9 @@
   if (
     window.location.hash.includes("#apply-ipo") ||
     isRecording ||
-    recordedSteps.length > 0
+    recordedSteps.length > 0 ||
+    isPlaying ||
+    cachedFlow.length > 0
   ) {
     // Wait for the page to be somewhat loaded
     setTimeout(createUI, 2000);
