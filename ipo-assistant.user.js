@@ -2,6 +2,7 @@
 // @name         IPO Assistant PRO (Recorder + Sync)
 // @namespace    http://tampermonkey.net/
 // @version      0.4
+// @version      0.5
 // @description  Automates ASBA/IPO steps on mobile and syncs to GitHub
 // @author       You & Gemini
 // @match        *://*.icicibank.com/*
@@ -30,6 +31,9 @@
 
   let isRecording = GM_getValue("isRecording", false);
   let recordedSteps = GM_getValue("recordedSteps", []);
+  let isPlaying = GM_getValue("isPlaying", false);
+  let playIndex = GM_getValue("playIndex", 0);
+  let cachedFlow = GM_getValue("cachedFlow", []);
   let selectorsData = {};
   let currentSha = null;
 
@@ -45,12 +49,14 @@
             </div>
             <div id="ipo-buttons" style="margin-top:15px; display:flex; gap:10px;">
                  <button id="rec-btn" style="background:#c83a3a; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">Record Flow</button>
+                 <button id="play-btn" style="background:#3b82f6; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">▶️ Auto Apply</button>
                  <button id="sync-btn" style="background:#0f9d58; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">Sync to GitHub</button>
             </div>
         `;
     document.body.appendChild(div);
 
     document.getElementById("rec-btn").onclick = toggleRecord;
+    document.getElementById("play-btn").onclick = togglePlayback;
     document.getElementById("sync-btn").onclick = syncToGitHub;
 
     // Restore UI state if page reloaded/redirected
@@ -60,6 +66,11 @@
       recBtn.innerText = "Stop Recording";
       recBtn.style.background = "#555";
       recIndicator.style.display = "inline";
+    } else if (isPlaying) {
+      const playBtn = document.getElementById("play-btn");
+      playBtn.innerText = "⏹️ Stop";
+      playBtn.style.background = "#555";
+      document.getElementById("rec-btn").style.display = "none";
     } else if (recordedSteps.length > 0) {
       document.getElementById("sync-btn").style.display = "inline-block";
     }
@@ -157,6 +168,89 @@
           `RECORDING STOPPED\n${recordedSteps.length} steps captured. Click "Sync to GitHub" to save.`,
         );
       }
+    }
+  }
+
+  async function togglePlayback() {
+    if (isPlaying) {
+      // Stop Playback
+      isPlaying = false;
+      GM_setValue("isPlaying", false);
+      window.location.reload(); // Reload to reset UI
+      return;
+    }
+
+    // Start Playback
+    if (!GITHUB_TOKEN) {
+      const input = prompt("Enter GitHub Token to fetch recorded steps:");
+      if (!input) return;
+      GITHUB_TOKEN = input.trim();
+      GM_setValue("GITHUB_TOKEN", GITHUB_TOKEN);
+    }
+
+    try {
+      const playBtn = document.getElementById("play-btn");
+      playBtn.innerText = "Loading...";
+
+      // 1. Fetch latest flow
+      const fileData = await fetchFromGitHub();
+      const allSelectors = JSON.parse(atob(fileData.content));
+      const host = window.location.hostname.replace("www.", "");
+
+      if (!allSelectors[host]) {
+        alert(`No recorded flow found for ${host}`);
+        playBtn.innerText = "▶️ Auto Apply";
+        return;
+      }
+
+      // 2. Initialize State
+      cachedFlow = allSelectors[host];
+      GM_setValue("cachedFlow", cachedFlow);
+
+      isPlaying = true;
+      playIndex = 0;
+      GM_setValue("isPlaying", true);
+      GM_setValue("playIndex", 0);
+
+      playBtn.innerText = "⏹️ Stop";
+      document.getElementById("rec-btn").style.display = "none";
+
+      executeStep();
+    } catch (e) {
+      alert("Error fetching flow: " + e.message);
+      document.getElementById("play-btn").innerText = "▶️ Auto Apply";
+    }
+  }
+
+  function executeStep() {
+    if (!isPlaying) return;
+
+    if (playIndex >= cachedFlow.length) {
+      alert("✅ Automation Complete!");
+      togglePlayback(); // Stop
+      return;
+    }
+
+    const step = cachedFlow[playIndex];
+    const el = document.querySelector(step.selector);
+
+    if (el) {
+      console.log(`Executing Step ${step.step}: Clicking ${step.selector}`);
+      el.style.outline = "3px solid #10b981"; // Green highlight
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      setTimeout(() => {
+        el.click();
+        playIndex++;
+        GM_setValue("playIndex", playIndex);
+
+        // Wait for navigation or next step
+        setTimeout(executeStep, 2000);
+      }, 500); // Small delay for visual feedback
+    } else {
+      // Element not found yet (loading?), retry in 1s
+      console.log(`Waiting for element: ${step.selector}`);
+      setTimeout(executeStep, 1000);
     }
   }
 
@@ -276,5 +370,9 @@
   ) {
     // Wait for the page to be somewhat loaded
     setTimeout(createUI, 2000);
+  }
+
+  if (isPlaying) {
+    setTimeout(executeStep, 2000);
   }
 })();
