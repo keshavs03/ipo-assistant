@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IPO Assistant PRO (Recorder + Sync)
 // @namespace    http://tampermonkey.net/
-// @version      0.11
+// @version      0.15
 // @description  Automates ASBA/IPO steps on mobile and syncs to GitHub
 // @author       You & Gemini
 // @match        *://*.icicibank.com/*
@@ -37,6 +37,9 @@
   let selectorsData = {};
   let currentSha = null;
 
+  // Validate execution context immediately
+  validateContext();
+
   function createUI() {
     const div = document.createElement("div");
     div.id = "ipo-assistant-overlay";
@@ -55,7 +58,7 @@
                  <button id="reset-btn" style="background:#777; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">🗑️ Reset</button>
                  <button id="sync-btn" style="background:#0f9d58; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">Sync to GitHub</button>
             </div>
-            <div id="step-status" style="margin-top:10px; font-size:12px; color:#aaa; display:none;"></div>
+            <div id="step-status" style="margin-top:10px; font-size:12px; color:#aaa; display:none; background:#222; padding:5px; border-radius:4px; border:1px solid #444; word-break:break-all;"></div>
         `;
     document.body.appendChild(div);
 
@@ -63,7 +66,7 @@
     document.getElementById("play-btn").onclick = togglePlayback;
     document.getElementById("prev-btn").onclick = stepPrev;
     document.getElementById("next-btn").onclick = stepNext;
-    document.getElementById("reset-btn").onclick = resetFlow;
+    document.getElementById("reset-btn").onclick = () => resetFlow(false);
     document.getElementById("sync-btn").onclick = syncToGitHub;
 
     updateUIState();
@@ -214,6 +217,33 @@
       if (document.querySelectorAll(selector).length === 1) return selector;
     }
 
+    // 4. Accessibility & Alt Attributes
+    if (el.getAttribute("aria-label")) {
+      const selector = `[aria-label='${el.getAttribute("aria-label")}']`;
+      if (document.querySelectorAll(selector).length === 1) return selector;
+    }
+    if (el.getAttribute("alt")) {
+      const selector = `[alt='${el.getAttribute("alt")}']`;
+      if (document.querySelectorAll(selector).length === 1) return selector;
+    }
+
+    // 5. Stable Classes (New)
+    if (el.classList && el.classList.length > 0) {
+      const stableClasses = Array.from(el.classList).filter(isStableClass);
+      if (stableClasses.length > 0) {
+        // Try the most specific combination (Tag + Classes)
+        const selector =
+          el.tagName.toLowerCase() + "." + stableClasses.join(".");
+        if (document.querySelectorAll(selector).length === 1) return selector;
+
+        // Try individual stable classes if unique
+        for (const cls of stableClasses) {
+          if (document.querySelectorAll("." + cls).length === 1)
+            return "." + cls;
+        }
+      }
+    }
+
     // 3. ID - Only if it looks stable (no long sequences of numbers)
     if (el.id && !/\d{3,}/.test(el.id)) {
       return `#${el.id}`;
@@ -229,9 +259,18 @@
     // Fallback to a more robust XPath-like selector
     let path = [],
       parent;
-    while ((parent = el.parentNode)) {
-      const currentEl = el;
+    let current = el;
+
+    while ((parent = current.parentNode)) {
+      const currentEl = current;
       let tag = currentEl.tagName.toLowerCase();
+
+      // Optimization: If we hit a stable ID on a parent, use it as root
+      if (currentEl !== el && currentEl.id && !/\d{3,}/.test(currentEl.id)) {
+        path.unshift(`#${currentEl.id}`);
+        break;
+      }
+
       let siblings = Array.from(parent.children).filter(
         (e) => e.tagName === currentEl.tagName,
       );
@@ -239,12 +278,52 @@
       let selector =
         tag + (siblings.length > 1 ? `:nth-of-type(${index})` : "");
       path.unshift(selector);
-      el = parent;
-      if (tag === "body") {
-        break;
-      }
+      current = parent;
+      if (tag === "body" || tag === "html") break;
     }
     return path.join(" > ");
+  }
+
+  function isStableClass(className) {
+    if (!className || typeof className !== "string") return false;
+    if (className.length < 3) return false;
+    // Filter out common dynamic patterns
+    if (/^css-/.test(className)) return false; // Styled-components
+    if (/^ng-/.test(className)) return false; // Angular
+    if (/\d{3,}/.test(className)) return false; // Random numbers
+    if (/^[a-z0-9]{10,}$/.test(className)) return false; // Random hash
+    // Filter out common utility classes
+    const blacklist = [
+      "active",
+      "focus",
+      "hover",
+      "visible",
+      "hidden",
+      "show",
+      "hide",
+      "flex",
+      "grid",
+      "block",
+      "inline",
+      "relative",
+      "absolute",
+      "fixed",
+      "w-full",
+      "h-full",
+      "m-0",
+      "p-0",
+      "container",
+      "row",
+      "col",
+      "btn",
+      "button",
+      "input",
+      "form-control", // Too generic without context
+    ];
+    if (blacklist.includes(className)) return false;
+    // Tailwind-like patterns (e.g., p-4, mt-2, text-center)
+    if (/^[a-z]{1,2}-\d+$/.test(className)) return false;
+    return true;
   }
 
   function toggleRecord() {
@@ -258,6 +337,7 @@
         // Inherit successful steps up to current point
         recordedSteps = cachedFlow.slice(0, playIndex);
         GM_setValue("recordedSteps", recordedSteps);
+        GM_setValue("flowOrigin", window.location.hostname); // Update origin
 
         // Clear error/cache and start recording
         GM_setValue("lastError", null);
@@ -279,6 +359,7 @@
     if (isRecording) {
       recordedSteps = [];
       GM_setValue("recordedSteps", recordedSteps);
+      GM_setValue("flowOrigin", window.location.hostname); // Set origin
       alert(
         "RECORDING STARTED\nClick the elements on the page in the correct order.",
       );
@@ -338,6 +419,7 @@
       // 2. Initialize State
       cachedFlow = allSelectors[host];
       GM_setValue("cachedFlow", cachedFlow);
+      GM_setValue("flowOrigin", window.location.hostname); // Set origin
 
       isPlaying = false; // Start in Paused/Manual mode
       playIndex = 0;
@@ -376,7 +458,7 @@
         if (statusDiv) {
           const actionText =
             step.action === "type" ? `Typing "${step.value}"` : "Clicking";
-          statusDiv.innerText = `Step ${step.step}: ${actionText} ${step.selector}`;
+          statusDiv.innerText = `[${playIndex + 1}/${cachedFlow.length}] ${actionText}\n${step.selector}`;
         }
 
         el.style.outline = "3px solid #10b981"; // Green highlight
@@ -385,11 +467,17 @@
         setTimeout(() => {
           try {
             if (step.action === "type") {
+              el.focus();
               el.value = step.value;
               el.dispatchEvent(new Event("input", { bubbles: true }));
               el.dispatchEvent(new Event("change", { bubbles: true }));
+              el.blur();
+            } else if (el.tagName.toLowerCase() === "select") {
+              // Dropdown handling
+              el.value = step.value; // You might need to record value for selects too
+              el.dispatchEvent(new Event("change", { bubbles: true }));
             } else {
-              el.click();
+              simulateClick(el);
             }
 
             playIndex++;
@@ -408,7 +496,7 @@
         const statusDiv = document.getElementById("step-status");
         if (statusDiv) {
           statusDiv.style.display = "block";
-          statusDiv.innerText = `Waiting for element... (${stepRetries}/10)`;
+          statusDiv.innerText = `[${playIndex + 1}/${cachedFlow.length}] Waiting (${stepRetries}/10)...\nTarget: ${step.selector}`;
         }
         if (stepRetries > 10) {
           throw new Error(`Element not found: ${step.selector}`);
@@ -419,6 +507,18 @@
     } catch (err) {
       handleExecutionError(err, step);
     }
+  }
+
+  function simulateClick(element) {
+    const events = ["mousedown", "mouseup", "click"];
+    events.forEach((eventType) => {
+      const event = new MouseEvent(eventType, {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+      });
+      element.dispatchEvent(event);
+    });
   }
 
   function handleExecutionError(error, step) {
@@ -468,8 +568,12 @@
     }
   }
 
-  function resetFlow() {
-    if (confirm("Reset everything? This clears current progress.")) {
+  function resetFlow(force = false) {
+    const isSilent = typeof force === "boolean" && force === true;
+    if (
+      isSilent ||
+      confirm("Reset everything? This clears current progress.")
+    ) {
       isRecording = false;
       isPlaying = false;
       recordedSteps = [];
@@ -482,8 +586,51 @@
       GM_setValue("cachedFlow", []);
       GM_setValue("playIndex", 0);
       GM_setValue("lastError", null);
+      GM_setValue("flowOrigin", null);
       updateUIState();
     }
+  }
+
+  function validateContext() {
+    const flowOrigin = GM_getValue("flowOrigin", null);
+    const hasState =
+      recordedSteps.length > 0 ||
+      cachedFlow.length > 0 ||
+      isRecording ||
+      isPlaying;
+
+    if (hasState && flowOrigin) {
+      const currentHost = window.location.hostname;
+      if (!isRelated(flowOrigin, currentHost)) {
+        console.log(
+          `[IPO Assistant] Context switch detected: ${flowOrigin} -> ${currentHost}. Resetting.`,
+        );
+        resetFlow(true); // Silent reset
+      }
+    }
+  }
+
+  function isRelated(h1, h2) {
+    if (h1 === h2) return true;
+    const s1 = h1.replace("www.", "").toLowerCase().split(/[.-]/);
+    const s2 = h2.replace("www.", "").toLowerCase().split(/[.-]/);
+    const common = [
+      "bank",
+      "online",
+      "retail",
+      "netbanking",
+      "invest",
+      "portal",
+    ];
+
+    // Check for shared significant tokens (len > 3) that are not common words
+    // e.g. "icici" in "icicibank" matches. "icicibank" vs "hdfcbank" does not.
+    return s1.some(
+      (p1) =>
+        p1.length > 3 &&
+        !common.includes(p1) &&
+        s2.some((p2) => p2.includes(p1) || p1.includes(p2)),
+    );
   }
 
   async function syncToGitHub() {
