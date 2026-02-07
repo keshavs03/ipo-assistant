@@ -1,0 +1,89 @@
+{
+  "icici.bank.in": [
+    {
+      "step": 1,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 2,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 3,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 4,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 5,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 6,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 7,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 8,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 9,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 10,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 11,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 12,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 13,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 14,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 15,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 16,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    },
+    {
+      "step": 17,
+      "action": "click",
+      "selector": "body > div:nth-of-type(1) > div > div > header > div > div > div:nth-of-type(2) > div > div > header > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div > ul > li:nth-of-type(1) > a"
+    }
+  ]
+}
