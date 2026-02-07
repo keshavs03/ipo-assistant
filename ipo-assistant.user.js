@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         IPO Assistant PRO (Recorder + Sync)
 // @namespace    http://tampermonkey.net/
-// @version      0.7
+// @version      0.8
 // @description  Automates ASBA/IPO steps on mobile and syncs to GitHub
 // @author       You & Gemini
 // @match        *://*.icicibank.com/*
@@ -52,6 +52,7 @@
                  <button id="prev-btn" style="background:#555; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">⏮️</button>
                  <button id="play-btn" style="background:#3b82f6; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer;">📂 Load Flow</button>
                  <button id="next-btn" style="background:#555; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">⏭️</button>
+                 <button id="reset-btn" style="background:#777; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">🗑️ Reset</button>
                  <button id="sync-btn" style="background:#0f9d58; color:white; border:none; padding:8px 12px; border-radius:8px; font-size:12px; cursor:pointer; display:none;">Sync to GitHub</button>
             </div>
             <div id="step-status" style="margin-top:10px; font-size:12px; color:#aaa; display:none;"></div>
@@ -62,6 +63,7 @@
     document.getElementById("play-btn").onclick = togglePlayback;
     document.getElementById("prev-btn").onclick = stepPrev;
     document.getElementById("next-btn").onclick = stepNext;
+    document.getElementById("reset-btn").onclick = resetFlow;
     document.getElementById("sync-btn").onclick = syncToGitHub;
 
     updateUIState();
@@ -104,6 +106,7 @@
     const playBtn = document.getElementById("play-btn");
     const prevBtn = document.getElementById("prev-btn");
     const nextBtn = document.getElementById("next-btn");
+    const resetBtn = document.getElementById("reset-btn");
     const syncBtn = document.getElementById("sync-btn");
     const recIndicator = document.getElementById("rec-indicator");
     const statusDiv = document.getElementById("step-status");
@@ -114,6 +117,7 @@
     playBtn.style.display = "inline-block";
     prevBtn.style.display = "none";
     nextBtn.style.display = "none";
+    resetBtn.style.display = "none";
     syncBtn.style.display = "none";
     recIndicator.style.display = "none";
     statusDiv.style.display = "none";
@@ -157,6 +161,10 @@
       statusDiv.innerText = `Paused: Step ${playIndex + 1}/${cachedFlow.length}`;
     } else if (recordedSteps.length > 0) {
       syncBtn.style.display = "inline-block";
+    }
+
+    if (recordedSteps.length > 0 || cachedFlow.length > 0 || lastError) {
+      resetBtn.style.display = "inline-block";
     }
   }
 
@@ -324,6 +332,11 @@
       } else {
         // Element not found yet (loading?), retry in 1s
         stepRetries++;
+        const statusDiv = document.getElementById("step-status");
+        if (statusDiv) {
+          statusDiv.style.display = "block";
+          statusDiv.innerText = `Waiting for element... (${stepRetries}/10)`;
+        }
         if (stepRetries > 10) {
           throw new Error(`Element not found: ${step.selector}`);
         }
@@ -370,10 +383,33 @@
         GM_setValue("lastError", null); // Clear error on manual nav
         updateUIState();
       } else {
-        alert("Element not found. Try scrolling or waiting.");
+        if (confirm("Element not found. Skip this step?")) {
+          playIndex++;
+          GM_setValue("playIndex", playIndex);
+          GM_setValue("lastError", null);
+          updateUIState();
+        }
       }
     } else {
       alert("End of flow.");
+    }
+  }
+
+  function resetFlow() {
+    if (confirm("Reset everything? This clears current progress.")) {
+      isRecording = false;
+      isPlaying = false;
+      recordedSteps = [];
+      cachedFlow = [];
+      playIndex = 0;
+      stepRetries = 0;
+      GM_setValue("isRecording", false);
+      GM_setValue("isPlaying", false);
+      GM_setValue("recordedSteps", []);
+      GM_setValue("cachedFlow", []);
+      GM_setValue("playIndex", 0);
+      GM_setValue("lastError", null);
+      updateUIState();
     }
   }
 
