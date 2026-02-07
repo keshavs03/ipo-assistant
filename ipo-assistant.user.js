@@ -26,8 +26,8 @@
   const SELECTORS_FILE_PATH = "selectors.json";
   // --- END CONFIGURATION ---
 
-  let isRecording = false;
-  let recordedSteps = [];
+  let isRecording = GM_getValue("isRecording", false);
+  let recordedSteps = GM_getValue("recordedSteps", []);
   let selectorsData = {};
   let currentSha = null;
 
@@ -51,14 +51,31 @@
     document.getElementById("rec-btn").onclick = toggleRecord;
     document.getElementById("sync-btn").onclick = syncToGitHub;
 
+    // Restore UI state if page reloaded/redirected
+    if (isRecording) {
+      const recBtn = document.getElementById("rec-btn");
+      const recIndicator = document.getElementById("rec-indicator");
+      recBtn.innerText = "Stop Recording";
+      recBtn.style.background = "#555";
+      recIndicator.style.display = "inline";
+    } else if (recordedSteps.length > 0) {
+      document.getElementById("sync-btn").style.display = "inline-block";
+    }
+
     document.addEventListener(
       "click",
       (e) => {
-        if (!isRecording || e.target.closest("#" + div.id)) {
+        // Check global state in case stopped in another tab
+        if (
+          !GM_getValue("isRecording", false) ||
+          e.target.closest("#" + div.id)
+        ) {
           return;
         }
-        e.preventDefault();
-        e.stopPropagation();
+        // Removed preventDefault/stopPropagation to allow navigation/login
+
+        // Refresh steps from storage to handle cross-tab flows
+        recordedSteps = GM_getValue("recordedSteps", []);
 
         const selector = getBestSelector(e.target);
         recordedSteps.push({
@@ -66,6 +83,10 @@
           action: "click",
           selector: selector,
         });
+
+        // Persist steps immediately so they survive redirects/new tabs
+        GM_setValue("recordedSteps", recordedSteps);
+
         e.target.style.outline = "3px solid #3b82f6";
         e.target.style.boxShadow = "0 0 20px #3b82f6";
         console.log(`Step ${recordedSteps.length}: Clicked -> ${selector}`);
@@ -108,12 +129,15 @@
 
   function toggleRecord() {
     isRecording = !isRecording;
+    GM_setValue("isRecording", isRecording);
+
     const recBtn = document.getElementById("rec-btn");
     const syncBtn = document.getElementById("sync-btn");
     const recIndicator = document.getElementById("rec-indicator");
 
     if (isRecording) {
       recordedSteps = [];
+      GM_setValue("recordedSteps", recordedSteps);
       recBtn.innerText = "Stop Recording";
       recBtn.style.background = "#555";
       syncBtn.style.display = "none";
@@ -204,6 +228,8 @@
         onload: function (response) {
           if (response.status === 200 || response.status === 201) {
             alert("✅ Success! Flow has been synced to your GitHub.");
+            recordedSteps = [];
+            GM_setValue("recordedSteps", []);
             resolve(JSON.parse(response.responseText));
           } else {
             alert(
@@ -218,7 +244,11 @@
   }
 
   // --- Main Execution ---
-  if (window.location.hash.includes("#apply-ipo")) {
+  if (
+    window.location.hash.includes("#apply-ipo") ||
+    isRecording ||
+    recordedSteps.length > 0
+  ) {
     // Wait for the page to be somewhat loaded
     setTimeout(createUI, 2000);
   }
