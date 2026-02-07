@@ -33,6 +33,7 @@
 
   function createUI() {
     const div = document.createElement("div");
+    div.id = "ipo-assistant-overlay";
     div.style.cssText =
       "position:fixed; bottom:20px; right:20px; z-index:10000; background:#111; color:white; padding:15px; border-radius:12px; font-family:sans-serif; border:1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);";
     div.innerHTML = `
@@ -173,6 +174,12 @@
 
   function updateGitHubFile(content) {
     return new Promise((resolve, reject) => {
+      const body = {
+        message: `[AUTO-SYNC] Updated IPO flow for ${window.location.hostname}`,
+        content: content,
+      };
+      if (currentSha) body.sha = currentSha;
+
       GM_xmlhttpRequest({
         method: "PUT",
         url: `https://api.github.com/repos/${GITHUB_USER_REPO}/contents/${SELECTORS_FILE_PATH}`,
@@ -181,11 +188,7 @@
           Accept: "application/vnd.github.v3+json",
           "Content-Type": "application/json",
         },
-        data: JSON.stringify({
-          message: `[AUTO-SYNC] Updated IPO flow for ${window.location.hostname}`,
-          content: content,
-          sha: currentSha, // Must provide the blob SHA of the file being replaced
-        }),
+        data: JSON.stringify(body),
         onload: function (response) {
           if (response.status === 200 || response.status === 201) {
             alert("✅ Success! Flow has been synced to your GitHub.");
