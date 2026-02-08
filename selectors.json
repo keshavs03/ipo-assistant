@@ -34,5 +34,65 @@
       "selector": "[name='password-l']",
       "value": "JaiShreeRam"
     }
+  ],
+  "retailnetbanking.icici.bank.in-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": [
+    {
+      "step": 1,
+      "action": "click",
+      "selector": "[name='username-l']",
+      "hostname": "retailnetbanking.icici.bank.in",
+      "pathname": "/login-page"
+    },
+    {
+      "step": 2,
+      "action": "click",
+      "selector": "span.checkmark-sr",
+      "hostname": "retailnetbanking.icici.bank.in",
+      "pathname": "/login-page"
+    },
+    {
+      "step": 3,
+      "action": "type",
+      "selector": "[name='username-l']",
+      "value": "keshav",
+      "hostname": "retailnetbanking.icici.bank.in",
+      "pathname": "/login-page"
+    },
+    {
+      "step": 4,
+      "action": "click",
+      "selector": "#rememberUserId",
+      "hostname": "retailnetbanking.icici.bank.in",
+      "pathname": "/login-page"
+    },
+    {
+      "step": 5,
+      "action": "type",
+      "selector": "#rememberUserId",
+      "value": "on",
+      "hostname": "retailnetbanking.icici.bank.in",
+      "pathname": "/login-page"
+    },
+    {
+      "step": 6,
+      "action": "click",
+      "selector": "body > app-root > div:nth-of-type(1) > div > div > div > div > div > div > app-new-login > div > div:nth-of-type(1) > div > div > app-login-landing > div > div > div:nth-of-type(2) > form > div:nth-of-type(2) > div > label",
+      "hostname": "retailnetbanking.icici.bank.in",
+      "pathname": "/login-page"
+    },
+    {
+      "step": 7,
+      "action": "click",
+      "selector": "[name='password-l']",
+      "hostname": "retailnetbanking.icici.bank.in",
+      "pathname": "/login-page"
+    },
+    {
+      "step": 8,
+      "action": "click",
+      "selector": "[name='password-l']",
+      "hostname": "retailnetbanking.icici.bank.in",
+      "pathname": "/login-page"
+    }
   ]
 }
